@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Net.Http;
 using System.Threading.Tasks;
+using AbstractCoding.Http.Requests;
 using Newtonsoft.Json;
 
 namespace AbstractCoding.Http.Operations
@@ -10,43 +11,42 @@ namespace AbstractCoding.Http.Operations
         public async Task<TResponseContentType> GetAsync<TResponseContentType>(string requestUri,
             HttpClient httpClient)
         {
-            Task<HttpResponseMessage> LoadHttpResponse() => httpClient.GetAsync(requestUri);
+            var httpRequest = new HttpRequestGet(requestUri, httpClient);
 
-            return await RequestAsync<TResponseContentType>(LoadHttpResponse);
+            return await ExecuteRequest<TResponseContentType>(httpRequest);
         }
 
         public async Task<TResponseContentType> PostAsync<TResponseContentType>(string requestUri,
             HttpClient httpClient, HttpContent httpContent)
         {
-            Task<HttpResponseMessage> LoadHttpResponse() => httpClient.PostAsync(requestUri, httpContent);
+            var httpRequest = new HttpRequestPost(requestUri, httpClient, httpContent);
 
-            return await RequestAsync<TResponseContentType>(LoadHttpResponse);
+            return await ExecuteRequest<TResponseContentType>(httpRequest);
         }
 
         public async Task<TResponseContentType> PatchAsync<TResponseContentType>(string requestUri,
             HttpClient httpClient, HttpContent httpContent)
         {
-            Task<HttpResponseMessage> LoadHttpResponse() => httpClient.PatchAsync(requestUri, httpContent);
+            var httpRequest = new HttpRequestPatch(requestUri, httpClient, httpContent);
 
-            return await RequestAsync<TResponseContentType>(LoadHttpResponse);
+            return await ExecuteRequest<TResponseContentType>(httpRequest);
         }
 
         public async Task<TResponseContentType> PutAsync<TResponseContentType>(string requestUri,
             HttpClient httpClient, HttpContent httpContent)
         {
-            Task<HttpResponseMessage> LoadHttpResponse() => httpClient.PutAsync(requestUri, httpContent);
+            var httpRequest = new HttpRequestPut(requestUri, httpClient, httpContent);
 
-            return await RequestAsync<TResponseContentType>(LoadHttpResponse);
+            return await ExecuteRequest<TResponseContentType>(httpRequest);
         }
 
-        public async Task<TResponseContentType> RequestAsync<TResponseContentType>(
-            Func<Task<HttpResponseMessage>> loadHttpResponse)
+        private static async Task<TResponseContentType> ExecuteRequest<TResponseContentType>(HttpRequest httpRequest)
         {
             TResponseContentType responseContent;
 
             try
             {
-                var response = await loadHttpResponse.Invoke();
+                var response = await httpRequest.Execute();
                 var responseContentRaw = await response.Content.ReadAsStringAsync();
                 responseContent = JsonConvert.DeserializeObject<TResponseContentType>(responseContentRaw);
             }
