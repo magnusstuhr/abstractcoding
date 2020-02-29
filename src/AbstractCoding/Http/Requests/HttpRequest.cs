@@ -4,10 +4,13 @@ using AbstractCoding.Extensions;
 
 namespace AbstractCoding.Http.Requests
 {
-    public abstract class HttpRequest
+    public abstract class HttpRequest : IHttpRequest
     {
-        protected readonly string RequestUri;
-        protected readonly HttpClient Client;
+        protected string RequestUri { get; }
+
+        protected HttpClient Client { get; }
+
+        public abstract Task<HttpResponseMessage> Execute();
 
         protected HttpRequest(string requestUri, HttpClient httpClient)
         {
@@ -17,7 +20,5 @@ namespace AbstractCoding.Http.Requests
             RequestUri = requestUri;
             Client = httpClient;
         }
-
-        public abstract Task<HttpResponseMessage> Execute();
     }
 }

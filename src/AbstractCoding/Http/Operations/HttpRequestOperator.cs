@@ -8,10 +8,17 @@ namespace AbstractCoding.Http.Operations
 {
     public class HttpRequestOperator
     {
+        private readonly IHttpRequestFactory _httpRequestFactory;
+
+        public HttpRequestOperator(IHttpRequestFactory httpRequestFactory)
+        {
+            _httpRequestFactory = httpRequestFactory;
+        } 
+
         public async Task<TResponseContentType> GetAsync<TResponseContentType>(string requestUri,
             HttpClient httpClient)
         {
-            var httpRequest = new HttpRequestGet(requestUri, httpClient);
+            var httpRequest = _httpRequestFactory.CreateGetRequest(requestUri, httpClient);
 
             return await ExecuteRequest<TResponseContentType>(httpRequest);
         }
@@ -19,7 +26,7 @@ namespace AbstractCoding.Http.Operations
         public async Task<TResponseContentType> PostAsync<TResponseContentType>(string requestUri,
             HttpClient httpClient, HttpContent httpContent)
         {
-            var httpRequest = new HttpRequestPost(requestUri, httpClient, httpContent);
+            var httpRequest = _httpRequestFactory.CreatePostRequest(requestUri, httpClient, httpContent);
 
             return await ExecuteRequest<TResponseContentType>(httpRequest);
         }
@@ -27,7 +34,7 @@ namespace AbstractCoding.Http.Operations
         public async Task<TResponseContentType> PatchAsync<TResponseContentType>(string requestUri,
             HttpClient httpClient, HttpContent httpContent)
         {
-            var httpRequest = new HttpRequestPatch(requestUri, httpClient, httpContent);
+            var httpRequest = _httpRequestFactory.CreatePatchRequest(requestUri, httpClient, httpContent);
 
             return await ExecuteRequest<TResponseContentType>(httpRequest);
         }
@@ -35,12 +42,12 @@ namespace AbstractCoding.Http.Operations
         public async Task<TResponseContentType> PutAsync<TResponseContentType>(string requestUri,
             HttpClient httpClient, HttpContent httpContent)
         {
-            var httpRequest = new HttpRequestPut(requestUri, httpClient, httpContent);
+            var httpRequest = _httpRequestFactory.CreatePutRequest(requestUri, httpClient, httpContent);
 
             return await ExecuteRequest<TResponseContentType>(httpRequest);
         }
 
-        private static async Task<TResponseContentType> ExecuteRequest<TResponseContentType>(HttpRequest httpRequest)
+        private static async Task<TResponseContentType> ExecuteRequest<TResponseContentType>(IHttpRequest httpRequest)
         {
             TResponseContentType responseContent;
 
