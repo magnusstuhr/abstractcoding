@@ -15,12 +15,11 @@ namespace AbstractCoding.Http.Operations
             try
             {
                 var response = await httpClient.GetAsync(requestUri);
-                var responseContentRaw = await response.Content.ReadAsStringAsync();
-                responseContent = JsonConvert.DeserializeObject<TResponseContentType>(responseContentRaw);
+                responseContent = await DeserializeContent<TResponseContentType>(response);
             }
             catch (Exception exception)
             {
-                throw new HttpRequestException("An exception occurred. See inner exception for details.", exception);
+                throw CreateHttpRequestException(exception);
             }
 
             return responseContent;
@@ -34,12 +33,11 @@ namespace AbstractCoding.Http.Operations
             try
             {
                 var response = await httpClient.PostAsync(requestUri, httpContent);
-                var responseContentRaw = await response.Content.ReadAsStringAsync();
-                responseContent = JsonConvert.DeserializeObject<TResponseContentType>(responseContentRaw);
+                responseContent = await DeserializeContent<TResponseContentType>(response);
             }
             catch (Exception exception)
             {
-                throw new HttpRequestException("An exception occurred. See inner exception for details.", exception);
+                throw CreateHttpRequestException(exception);
             }
 
             return responseContent;
@@ -53,12 +51,11 @@ namespace AbstractCoding.Http.Operations
             try
             {
                 var response = await httpClient.PatchAsync(requestUri, httpContent);
-                var responseContentRaw = await response.Content.ReadAsStringAsync();
-                responseContent = JsonConvert.DeserializeObject<TResponseContentType>(responseContentRaw);
+                responseContent = await DeserializeContent<TResponseContentType>(response);
             }
             catch (Exception exception)
             {
-                throw new HttpRequestException("An exception occurred. See inner exception for details.", exception);
+                throw CreateHttpRequestException(exception);
             }
 
             return responseContent;
@@ -72,15 +69,27 @@ namespace AbstractCoding.Http.Operations
             try
             {
                 var response = await httpClient.PutAsync(requestUri, httpContent);
-                var responseContentRaw = await response.Content.ReadAsStringAsync();
-                responseContent = JsonConvert.DeserializeObject<TResponseContentType>(responseContentRaw);
+                responseContent = await DeserializeContent<TResponseContentType>(response);
             }
             catch (Exception exception)
             {
-                throw new HttpRequestException("An exception occurred. See inner exception for details.", exception);
+                throw CreateHttpRequestException(exception);
             }
 
             return responseContent;
+        }
+
+        private static async Task<TResponseContentType> DeserializeContent<TResponseContentType>(
+            HttpResponseMessage response)
+        {
+            var responseContentRaw = await response.Content.ReadAsStringAsync();
+
+            return JsonConvert.DeserializeObject<TResponseContentType>(responseContentRaw);
+        }
+
+        private static HttpRequestException CreateHttpRequestException(Exception innerException)
+        {
+            return new HttpRequestException("An exception occurred. See inner exception for details.", innerException);
         }
     }
 }
