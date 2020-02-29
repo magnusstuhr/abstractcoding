@@ -13,7 +13,7 @@ See the different tags / releases to see how the code has evolved to be more abs
 ### 0.1.0
 The HttpRequestOperator class fullfil its requirements, but there are both structural and semantic code-duplication in every method.
 
-#### 0.1.0
+#### 0.1.1
 The HttpRequestOperator class' structural code-duplication in the HttpRequestOperator class is removed, but the semantic code-duplication remains.
 
 ### 0.2.0
