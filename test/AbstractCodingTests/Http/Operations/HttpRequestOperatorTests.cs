@@ -3,8 +3,8 @@ using System.Net;
 using System.Net.Http;
 using System.Threading.Tasks;
 using AbstractCoding.Http.Operations;
+using AbstractCoding.Http.Requests;
 using AbstractCodingTests.Mocks;
-using AbstractCodingTests.Mocks.Http.Model;
 using AbstractCodingTests.TestExtensions;
 using Moq;
 using Newtonsoft.Json;
@@ -14,69 +14,173 @@ namespace AbstractCodingTests.Http.Operations
 {
     public class HttpRequestOperatorTests
     {
-        public const HttpStatusCode HttpOk = HttpStatusCode.OK;
-
+        private readonly Mock<IHttpRequestFactory> _httpRequestFactoryMock;
         private readonly HttpRequestOperator _httpRequestOperator;
 
         public HttpRequestOperatorTests()
         {
-            _httpRequestOperator = new HttpRequestOperator();
+            _httpRequestFactoryMock = new Mock<IHttpRequestFactory>();
+            _httpRequestOperator = new HttpRequestOperator(_httpRequestFactoryMock.Object);
         }
 
         [Fact]
-        public async void GetAsync_ValidHttpClientAndRequestUri_ReturnsExpectedContentAndExpectedCallsWereMade()
+        public async void GetAsync_HttpRequestReturnsContent_ReturnsExpectedContentAndExpectedCallsWereMade()
         {
             // Arrange
-            var expectedHttpMethod = HttpMethod.Get;
-            var baseAddress = CreateRandomHttpsUri();
-            var requestUri = BuildRequestUri(baseAddress, uriPath: CreateRandomString());
-            var requestUriString = requestUri.ToString();
-            var expectedResponseContent = CreateRandomPerson();
+            var loadHttpRequest = LoadGetAsync();
+            var loadHttpRequestFactoryMockSetup = LoadSetupCreateGetRequestReturns();
+            var loadHttpRequestFactoryMockVerification = LoadCreateGetRequestVerification();
 
-            var jsonContentToReturn = ConvertToJson(expectedResponseContent);
+            // Arrange, Act & Assert
+            await RequestAsync_HttpRequestReturnsContent_ReturnsExpectedContentAndExpectedCallsWereMade(
+                loadHttpRequestFactoryMockSetup, loadHttpRequest, loadHttpRequestFactoryMockVerification);
+        }
 
-            var httpMessageHandlerMockRequestConfig =
-                new HttpMessageHandlerMockRequestConfig(HttpOk, requestUriString,
-                    jsonContentToReturn);
-            var httpClientMockConfig =
-                new HttpMessageHandlerMockConfig(baseAddress, httpMessageHandlerMockRequestConfig);
+        [Fact]
+        public async void GetAsync_HttpRequestThrows_ThrowsHttpRequestExceptionAndExpectedCallsWereMade()
+        {
+            // Arrange
+            var loadHttpRequest = LoadGetAsync();
+            var loadHttpRequestFactoryMockSetup = LoadSetupCreateGetRequestReturns();
+            var loadHttpRequestFactoryMockVerification = LoadCreateGetRequestVerification();
 
-            var httpMessageHandlerMock = new Mock<HttpMessageHandler>();
-            httpMessageHandlerMock.SetupSendAsyncReturns(httpClientMockConfig);
+            // Arrange, Act & Assert
+            await RequestAsync_HttpRequestThrows_ReturnsExpectedContentAndExpectedCallsWereMade(
+                loadHttpRequestFactoryMockSetup, loadHttpRequest, loadHttpRequestFactoryMockVerification);
+        }
 
-            var httpClient = httpMessageHandlerMock.CreateHttpClient(baseAddress);
+        [Fact]
+        public async void
+            PostAsync_HttpRequestReturnsContent_ReturnsExpectedContentAndExpectedCallsWereMade()
+        {
+            // Arrange
+            var loadHttpRequest = LoadPostAsync();
+            var loadHttpRequestFactoryMockSetup = LoadSetupCreatePostRequestReturns();
+            var loadHttpRequestFactoryMockVerification = LoadCreatePostRequestVerification();
+
+            // Arrange, Act & Assert
+            await RequestAsync_HttpRequestReturnsContent_ReturnsExpectedContentAndExpectedCallsWereMade(
+                loadHttpRequestFactoryMockSetup, loadHttpRequest, loadHttpRequestFactoryMockVerification);
+        }
+
+        [Fact]
+        public async void PostAsync_HttpRequestThrows_ThrowsHttpRequestExceptionAndExpectedCallsWereMade()
+        {
+            // Arrange
+            var loadHttpRequest = LoadPostAsync();
+            var loadHttpRequestFactoryMockSetup = LoadSetupCreatePostRequestReturns();
+            var loadHttpRequestFactoryMockVerification = LoadCreatePostRequestVerification();
+
+            // Arrange, Act & Assert
+            await RequestAsync_HttpRequestThrows_ReturnsExpectedContentAndExpectedCallsWereMade(
+                loadHttpRequestFactoryMockSetup, loadHttpRequest, loadHttpRequestFactoryMockVerification);
+        }
+
+        [Fact]
+        public async void
+            PatchAsync_HttpRequestReturnsContent_ReturnsExpectedContentAndExpectedCallsWereMade()
+        {
+            // Arrange
+            var loadHttpRequest = LoadPatchAsync();
+            var loadHttpRequestFactoryMockSetup = LoadSetupCreatePatchRequestReturns();
+            var loadHttpRequestFactoryMockVerification = LoadCreatePatchRequestVerification();
+
+            // Arrange, Act & Assert
+            await RequestAsync_HttpRequestReturnsContent_ReturnsExpectedContentAndExpectedCallsWereMade(
+                loadHttpRequestFactoryMockSetup, loadHttpRequest, loadHttpRequestFactoryMockVerification);
+        }
+
+        [Fact]
+        public async void PatchAsync_HttpRequestThrows_ThrowsHttpRequestExceptionAndExpectedCallsWereMade()
+        {
+            // Arrange
+            var loadHttpRequest = LoadPatchAsync();
+            var loadHttpRequestFactoryMockSetup = LoadSetupCreatePatchRequestReturns();
+            var loadHttpRequestFactoryMockVerification = LoadCreatePatchRequestVerification();
+
+            // Arrange, Act & Assert
+            await RequestAsync_HttpRequestThrows_ReturnsExpectedContentAndExpectedCallsWereMade(
+                loadHttpRequestFactoryMockSetup, loadHttpRequest, loadHttpRequestFactoryMockVerification);
+        }
+
+        [Fact]
+        public async void
+            PutAsync_HttpRequestReturnsContent_ReturnsExpectedContentAndExpectedCallsWereMade()
+        {
+            // Arrange
+            var loadHttpRequest = LoadPutAsync();
+            var loadHttpRequestFactoryMockSetup = LoadSetupCreatePutRequestReturns();
+            var loadHttpRequestFactoryMockVerification = LoadCreatePutRequestVerification();
+
+            // Arrange, Act & Assert
+            await RequestAsync_HttpRequestReturnsContent_ReturnsExpectedContentAndExpectedCallsWereMade(
+                loadHttpRequestFactoryMockSetup, loadHttpRequest, loadHttpRequestFactoryMockVerification);
+        }
+
+        [Fact]
+        public async void PutAsync_HttpRequestThrows_ThrowsHttpRequestExceptionAndExpectedCallsWereMade()
+        {
+            // Arrange
+            var loadHttpRequest = LoadPutAsync();
+            var loadHttpRequestFactoryMockSetup = LoadSetupCreatePutRequestReturns();
+            var loadHttpRequestFactoryMockVerification = LoadCreatePutRequestVerification();
+
+            // Arrange, Act & Assert
+            await RequestAsync_HttpRequestThrows_ReturnsExpectedContentAndExpectedCallsWereMade(
+                loadHttpRequestFactoryMockSetup, loadHttpRequest, loadHttpRequestFactoryMockVerification);
+        }
+
+        private async Task RequestAsync_HttpRequestReturnsContent_ReturnsExpectedContentAndExpectedCallsWereMade(
+            Action<Mock<IHttpRequestFactory>, string, HttpClient, HttpContent, IHttpRequest>
+                loadHttpRequestFactoryMockSetup,
+            Func<string, HttpClient, HttpContent, Task<Person>> loadHttpRequest,
+            Action<Mock<IHttpRequestFactory>, string, HttpClient, HttpContent> loadHttpRequestFactoryMockVerification)
+        {
+            // Arrange
+            var requestUri = CreateRandomString();
+            var httpClient = new HttpClient();
+            var personToReturn = CreateRandomPerson();
+            var requestHttpContent = CreateRandomHttpContent();
+
+            var httpRequestMock = new Mock<IHttpRequest>();
+            var httpResponseMessageToReturn = CreateHttpResponseMessage(personToReturn);
+            httpRequestMock.SetupExecuteReturns(httpResponseMessageToReturn);
+
+            loadHttpRequestFactoryMockSetup.Invoke(_httpRequestFactoryMock, requestUri, httpClient, requestHttpContent,
+                httpRequestMock.Object);
 
             // Act
-            var actualResponseContent = await _httpRequestOperator.GetAsync<Person>(requestUriString, httpClient);
+            var actualResponseContent = await loadHttpRequest.Invoke(requestUri, httpClient, requestHttpContent);
 
             // Assert
-            Assert.Equal(expectedResponseContent, actualResponseContent);
-            httpMessageHandlerMock.VerifySendAsyncWasCalled(requestUri, expectedHttpMethod);
+            Assert.Equal(personToReturn, actualResponseContent);
+
+            loadHttpRequestFactoryMockVerification.Invoke(_httpRequestFactoryMock, requestUri, httpClient,
+                requestHttpContent);
+            httpRequestMock.VerifyExecuteWasCalled();
         }
 
-        [Fact]
-        public async void GetAsync_ValidHttpClientAndRequestUri_ThrowsHttpRequestExceptionAndExpectedCallsWereMade()
+        private async Task RequestAsync_HttpRequestThrows_ReturnsExpectedContentAndExpectedCallsWereMade(
+            Action<Mock<IHttpRequestFactory>, string, HttpClient, HttpContent, IHttpRequest>
+                loadHttpRequestFactoryMockSetup,
+            Func<string, HttpClient, HttpContent, Task<Person>> loadHttpRequest,
+            Action<Mock<IHttpRequestFactory>, string, HttpClient, HttpContent> loadHttpRequestFactoryMockVerification)
         {
             // Arrange
-            var expectedHttpMethod = HttpMethod.Get;
-            var baseAddress = CreateRandomHttpsUri();
-            var requestUri = BuildRequestUri(baseAddress, uriPath: CreateRandomString());
-            var requestUriString = requestUri.ToString();
+            var requestUri = CreateRandomString();
+            var httpClient = new HttpClient();
+            var requestHttpContent = CreateRandomHttpContent();
+
+            var httpRequestMock = new Mock<IHttpRequest>();
             var exceptionToThrow = CreateRandomException();
+            httpRequestMock.SetupExecuteThrows(exceptionToThrow);
 
-            var httpMessageHandlerMockRequestConfig =
-                new HttpMessageHandlerMockRequestConfig(HttpOk, requestUriString);
-            var httpClientMockConfig =
-                new HttpMessageHandlerMockConfig(baseAddress, httpMessageHandlerMockRequestConfig);
+            loadHttpRequestFactoryMockSetup.Invoke(_httpRequestFactoryMock, requestUri, httpClient, requestHttpContent,
+                httpRequestMock.Object);
 
-            var httpMessageHandlerMock = new Mock<HttpMessageHandler>();
-            httpMessageHandlerMock.SetupSendAsyncThrows(httpClientMockConfig, exceptionToThrow);
-
-            var httpClient = httpMessageHandlerMock.CreateHttpClient(baseAddress);
-
-            // Act
+            // Assert
             var exception =
-                await Record.ExceptionAsync(() => _httpRequestOperator.GetAsync<Person>(requestUriString, httpClient));
+                await Record.ExceptionAsync(() => loadHttpRequest.Invoke(requestUri, httpClient, requestHttpContent));
 
             // Assert
             exception.Verify<HttpRequestException>("An exception occurred. See inner exception for details.");
@@ -84,154 +188,74 @@ namespace AbstractCodingTests.Http.Operations
             var innerException = exception?.InnerException;
             innerException.Verify<Exception>(exceptionToThrow.Message);
 
-            httpMessageHandlerMock.VerifySendAsyncWasCalled(requestUri, expectedHttpMethod);
+            loadHttpRequestFactoryMockVerification.Invoke(_httpRequestFactoryMock, requestUri, httpClient,
+                requestHttpContent);
+            httpRequestMock.VerifyExecuteWasCalled();
         }
 
-        [Fact]
-        public async void
-            PostAsync_ValidHttpClientAndRequestUriAndRequestContent_ReturnsExpectedContentAndExpectedCallsWereMade()
+        private static Action<Mock<IHttpRequestFactory>, string, HttpClient, HttpContent>
+            LoadCreateGetRequestVerification()
         {
-            // Arrange
-            var expectedHttpMethod = HttpMethod.Post;
-            var loadHttpRequest = LoadPostAsync();
-
-            // Arrange, Act & Assert
-            await
-                RequestWithBodyAsync_ValidHttpClientAndRequestUriAndRequestBody_ReturnsExpectedContentAndExpectedCallsWereMade(
-                    loadHttpRequest, expectedHttpMethod);
+            return (httpRequestFactoryMock, requestUri, httpClient, httpContent) =>
+                httpRequestFactoryMock.VerifyCreateGetRequestWasCalled(requestUri, httpClient);
         }
 
-        [Fact]
-        public async void PostAsync_ValidHttpClientAndRequestUri_ThrowsHttpRequestExceptionAndExpectedCallsWereMade()
+        private static Action<Mock<IHttpRequestFactory>, string, HttpClient, HttpContent, IHttpRequest>
+            LoadSetupCreateGetRequestReturns()
         {
-            // Arrange
-            var expectedHttpMethod = HttpMethod.Post;
-            var loadHttpRequest = LoadPostAsync();
-
-            // Arrange, Act & Assert
-            await RequestWithBodyAsync_ValidHttpClientAndRequestUri_ThrowsHttpRequestExceptionAndExpectedCallsWereMade(
-                loadHttpRequest, expectedHttpMethod);
+            return (httpRequestFactoryMock, requestUri, httpClient, httpContent, httpRequestToReturn) =>
+                httpRequestFactoryMock.SetupCreateGetRequestReturns(requestUri, httpClient, httpRequestToReturn);
         }
 
-        [Fact]
-        public async void
-            PatchAsync_ValidHttpClientAndRequestUriAndRequestContent_ReturnsExpectedContentAndExpectedCallsWereMade()
+        private static Action<Mock<IHttpRequestFactory>, string, HttpClient, HttpContent>
+            LoadCreatePostRequestVerification()
         {
-            // Arrange
-            var expectedHttpMethod = HttpMethod.Patch;
-            var loadHttpRequest = LoadPatchAsync();
-
-            // Arrange, Act & Assert
-            await
-                RequestWithBodyAsync_ValidHttpClientAndRequestUriAndRequestBody_ReturnsExpectedContentAndExpectedCallsWereMade(
-                    loadHttpRequest, expectedHttpMethod);
+            return (httpRequestFactoryMock, requestUri, httpClient, httpContent) =>
+                httpRequestFactoryMock.VerifyCreatePostRequestWasCalled(requestUri, httpClient, httpContent);
         }
 
-        [Fact]
-        public async void PatchAsync_ValidHttpClientAndRequestUri_ThrowsHttpRequestExceptionAndExpectedCallsWereMade()
+        private static Action<Mock<IHttpRequestFactory>, string, HttpClient, HttpContent, IHttpRequest>
+            LoadSetupCreatePostRequestReturns()
         {
-            // Arrange
-            var expectedHttpMethod = HttpMethod.Patch;
-            var loadHttpRequest = LoadPatchAsync();
-
-            // Arrange, Act & Assert
-            await RequestWithBodyAsync_ValidHttpClientAndRequestUri_ThrowsHttpRequestExceptionAndExpectedCallsWereMade(
-                loadHttpRequest, expectedHttpMethod);
+            return (httpRequestFactoryMock, requestUri, httpClient, httpContent, httpRequestToReturn) =>
+                httpRequestFactoryMock.SetupCreatePostRequestReturns(requestUri, httpClient, httpContent,
+                    httpRequestToReturn);
         }
 
-        [Fact]
-        public async void
-            PutAsync_ValidHttpClientAndRequestUriAndRequestContent_ReturnsExpectedContentAndExpectedCallsWereMade()
+        private static Action<Mock<IHttpRequestFactory>, string, HttpClient, HttpContent>
+            LoadCreatePatchRequestVerification()
         {
-            // Arrange
-            var expectedHttpMethod = HttpMethod.Put;
-            var loadHttpRequest = LoadPutAsync();
-
-            // Arrange, Act & Assert
-            await
-                RequestWithBodyAsync_ValidHttpClientAndRequestUriAndRequestBody_ReturnsExpectedContentAndExpectedCallsWereMade(
-                    loadHttpRequest, expectedHttpMethod);
+            return (httpRequestFactoryMock, requestUri, httpClient, httpContent) =>
+                httpRequestFactoryMock.VerifyCreatePatchRequestWasCalled(requestUri, httpClient, httpContent);
         }
 
-        [Fact]
-        public async void PutAsync_ValidHttpClientAndRequestUri_ThrowsHttpRequestExceptionAndExpectedCallsWereMade()
+        private static Action<Mock<IHttpRequestFactory>, string, HttpClient, HttpContent, IHttpRequest>
+            LoadSetupCreatePatchRequestReturns()
         {
-            // Arrange
-            var expectedHttpMethod = HttpMethod.Put;
-            var loadHttpRequest = LoadPutAsync();
-
-            // Arrange, Act & Assert
-            await RequestWithBodyAsync_ValidHttpClientAndRequestUri_ThrowsHttpRequestExceptionAndExpectedCallsWereMade(
-                loadHttpRequest, expectedHttpMethod);
+            return (httpRequestFactoryMock, requestUri, httpClient, httpContent, httpRequestToReturn) =>
+                httpRequestFactoryMock.SetupCreatePatchRequestReturns(requestUri, httpClient, httpContent,
+                    httpRequestToReturn);
         }
 
-        private static async Task
-            RequestWithBodyAsync_ValidHttpClientAndRequestUriAndRequestBody_ReturnsExpectedContentAndExpectedCallsWereMade(
-                Func<string, HttpClient, HttpContent, Task<Person>> loadHttpRequest,
-                HttpMethod expectedHttpMethod)
+        private static Action<Mock<IHttpRequestFactory>, string, HttpClient, HttpContent>
+            LoadCreatePutRequestVerification()
         {
-            // Arrange
-            var baseAddress = CreateRandomHttpsUri();
-            var requestUri = BuildRequestUri(baseAddress, uriPath: CreateRandomString());
-            var requestUriString = requestUri.ToString();
-            var expectedResponseContent = CreateRandomPerson();
-
-            var jsonContentToReturn = ConvertToJson(expectedResponseContent);
-            var requestContent = new StringContent(jsonContentToReturn);
-
-            var httpMessageHandlerMockRequestConfig =
-                new HttpMessageHandlerMockRequestConfig(HttpOk, requestUriString,
-                    jsonContentToReturn);
-            var httpClientMockConfig =
-                new HttpMessageHandlerMockConfig(baseAddress, httpMessageHandlerMockRequestConfig);
-
-            var httpMessageHandlerMock = new Mock<HttpMessageHandler>();
-            httpMessageHandlerMock.SetupSendAsyncReturns(httpClientMockConfig);
-
-            var httpClient = httpMessageHandlerMock.CreateHttpClient(baseAddress);
-
-            // Act
-            var actualResponseContent = await loadHttpRequest.Invoke(requestUriString, httpClient, requestContent);
-
-            // Assert
-            Assert.Equal(expectedResponseContent, actualResponseContent);
-            httpMessageHandlerMock.VerifySendAsyncWasCalled(requestUri, expectedHttpMethod, requestContent);
+            return (httpRequestFactoryMock, requestUri, httpClient, httpContent) =>
+                httpRequestFactoryMock.VerifyCreatePutRequestWasCalled(requestUri, httpClient, httpContent);
         }
 
-        private static async Task
-            RequestWithBodyAsync_ValidHttpClientAndRequestUri_ThrowsHttpRequestExceptionAndExpectedCallsWereMade(
-                Func<string, HttpClient, HttpContent, Task<Person>> loadHttpRequest, HttpMethod expectedHttpMethod)
+        private static Action<Mock<IHttpRequestFactory>, string, HttpClient, HttpContent, IHttpRequest>
+            LoadSetupCreatePutRequestReturns()
         {
-            // Arrange
-            var baseAddress = CreateRandomHttpsUri();
-            var requestUri = BuildRequestUri(baseAddress, uriPath: CreateRandomString());
-            var requestUriString = requestUri.ToString();
-            var exceptionToThrow = CreateRandomException();
-            var expectedRequestContent = CreateRandomPerson();
-            var expectedRequestContentJson = ConvertToJson(expectedRequestContent);
-            var expectedRequestContentHttp = new StringContent(expectedRequestContentJson);
+            return (httpRequestFactoryMock, requestUri, httpClient, httpContent, httpRequestToReturn) =>
+                httpRequestFactoryMock.SetupCreatePutRequestReturns(requestUri, httpClient, httpContent,
+                    httpRequestToReturn);
+        }
 
-            var httpMessageHandlerMockRequestConfig =
-                new HttpMessageHandlerMockRequestConfig(HttpOk, requestUriString, expectedRequestContentJson);
-            var httpClientMockConfig =
-                new HttpMessageHandlerMockConfig(baseAddress, httpMessageHandlerMockRequestConfig);
-
-            var httpMessageHandlerMock = new Mock<HttpMessageHandler>();
-            httpMessageHandlerMock.SetupSendAsyncThrows(httpClientMockConfig, exceptionToThrow);
-
-            var httpClient = httpMessageHandlerMock.CreateHttpClient(baseAddress);
-
-            // Act
-            var exception = await Record.ExceptionAsync(() =>
-                loadHttpRequest.Invoke(requestUriString, httpClient, expectedRequestContentHttp));
-
-            // Assert
-            exception.Verify<HttpRequestException>("An exception occurred. See inner exception for details.");
-
-            var innerException = exception?.InnerException;
-            innerException.Verify<Exception>(exceptionToThrow.Message);
-
-            httpMessageHandlerMock.VerifySendAsyncWasCalled(requestUri, expectedHttpMethod, expectedRequestContentHttp);
+        private Func<string, HttpClient, HttpContent, Task<Person>> LoadGetAsync()
+        {
+            return (requestUri, httpClient, httpContent) =>
+                _httpRequestOperator.GetAsync<Person>(requestUri, httpClient);
         }
 
         private Func<string, HttpClient, HttpContent, Task<Person>> LoadPostAsync()
@@ -252,6 +276,24 @@ namespace AbstractCodingTests.Http.Operations
                 _httpRequestOperator.PutAsync<Person>(requestUri, httpClient, httpContent);
         }
 
+        private static HttpResponseMessage CreateHttpResponseMessage<T>(T contentToReturn) where T : class
+        {
+            return new HttpResponseMessage(HttpStatusCode.OK)
+            {
+                Content = CreateHttpContent(contentToReturn)
+            };
+        }
+
+        private static HttpContent CreateRandomHttpContent()
+        {
+            return CreateHttpContent(CreateRandomPerson());
+        }
+
+        private static HttpContent CreateHttpContent<T>(T contentToReturn) where T : class
+        {
+            return new StringContent(ConvertToJson(contentToReturn));
+        }
+
         private static Person CreateRandomPerson()
         {
             return new Person
@@ -264,16 +306,6 @@ namespace AbstractCodingTests.Http.Operations
         private static string ConvertToJson<T>(T obj)
         {
             return JsonConvert.SerializeObject(obj);
-        }
-
-        private static Uri BuildRequestUri(Uri baseAddress, string uriPath)
-        {
-            return new Uri(baseAddress, uriPath);
-        }
-
-        private static Uri CreateRandomHttpsUri()
-        {
-            return new Uri($"https://{CreateRandomString()}.{CreateRandomString()}/");
         }
 
         private static Exception CreateRandomException()
