@@ -10,86 +10,52 @@ namespace AbstractCoding.Http.Operations
         public async Task<TResponseContentType> GetAsync<TResponseContentType>(string requestUri,
             HttpClient httpClient)
         {
-            TResponseContentType responseContent;
+            Task<HttpResponseMessage> LoadHttpResponse() => httpClient.GetAsync(requestUri);
 
-            try
-            {
-                var response = await httpClient.GetAsync(requestUri);
-                responseContent = await DeserializeContent<TResponseContentType>(response);
-            }
-            catch (Exception exception)
-            {
-                throw CreateHttpRequestException(exception);
-            }
-
-            return responseContent;
+            return await RequestAsync<TResponseContentType>(LoadHttpResponse);
         }
 
         public async Task<TResponseContentType> PostAsync<TResponseContentType>(string requestUri,
             HttpClient httpClient, HttpContent httpContent)
         {
-            TResponseContentType responseContent;
+            Task<HttpResponseMessage> LoadHttpResponse() => httpClient.PostAsync(requestUri, httpContent);
 
-            try
-            {
-                var response = await httpClient.PostAsync(requestUri, httpContent);
-                responseContent = await DeserializeContent<TResponseContentType>(response);
-            }
-            catch (Exception exception)
-            {
-                throw CreateHttpRequestException(exception);
-            }
-
-            return responseContent;
+            return await RequestAsync<TResponseContentType>(LoadHttpResponse);
         }
 
         public async Task<TResponseContentType> PatchAsync<TResponseContentType>(string requestUri,
             HttpClient httpClient, HttpContent httpContent)
         {
-            TResponseContentType responseContent;
+            Task<HttpResponseMessage> LoadHttpResponse() => httpClient.PatchAsync(requestUri, httpContent);
 
-            try
-            {
-                var response = await httpClient.PatchAsync(requestUri, httpContent);
-                responseContent = await DeserializeContent<TResponseContentType>(response);
-            }
-            catch (Exception exception)
-            {
-                throw CreateHttpRequestException(exception);
-            }
-
-            return responseContent;
+            return await RequestAsync<TResponseContentType>(LoadHttpResponse);
         }
 
         public async Task<TResponseContentType> PutAsync<TResponseContentType>(string requestUri,
             HttpClient httpClient, HttpContent httpContent)
         {
+            Task<HttpResponseMessage> LoadHttpResponse() => httpClient.PutAsync(requestUri, httpContent);
+
+            return await RequestAsync<TResponseContentType>(LoadHttpResponse);
+        }
+
+        public async Task<TResponseContentType> RequestAsync<TResponseContentType>(
+            Func<Task<HttpResponseMessage>> loadHttpResponse)
+        {
             TResponseContentType responseContent;
 
             try
             {
-                var response = await httpClient.PutAsync(requestUri, httpContent);
-                responseContent = await DeserializeContent<TResponseContentType>(response);
+                var response = await loadHttpResponse.Invoke();
+                var responseContentRaw = await response.Content.ReadAsStringAsync();
+                responseContent = JsonConvert.DeserializeObject<TResponseContentType>(responseContentRaw);
             }
             catch (Exception exception)
             {
-                throw CreateHttpRequestException(exception);
+                throw new HttpRequestException("An exception occurred. See inner exception for details.", exception);
             }
 
             return responseContent;
-        }
-
-        private static async Task<TResponseContentType> DeserializeContent<TResponseContentType>(
-            HttpResponseMessage response)
-        {
-            var responseContentRaw = await response.Content.ReadAsStringAsync();
-
-            return JsonConvert.DeserializeObject<TResponseContentType>(responseContentRaw);
-        }
-
-        private static HttpRequestException CreateHttpRequestException(Exception innerException)
-        {
-            return new HttpRequestException("An exception occurred. See inner exception for details.", innerException);
         }
     }
 }
